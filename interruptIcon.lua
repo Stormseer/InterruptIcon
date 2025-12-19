@@ -120,11 +120,9 @@ local function UpdateVisibility()
         frame:Show()
     else
         frame:Hide()
-        HideGlow() -- safety: hide glow if focus disappears
+        HideGlow() 
     end
 end
-
-
 
 --------------------------------------------------
 -- Drag Handling
