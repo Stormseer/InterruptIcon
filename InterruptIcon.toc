@@ -1,0 +1,8 @@
+## Interface: 120000
+## Title: Interrupt Icon
+## Author: Aryella
+## Version: 0.1
+## Notes: Simple interrupt cooldown icon
+## SavedVariables: InterruptIconDB
+
+InterruptIcon.lua
