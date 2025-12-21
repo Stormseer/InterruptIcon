@@ -75,13 +75,15 @@ local function UpdateGlowSize(iconSize)
 end
 
 local function ShowGlow()
-    glowFrame:Show()
-    pulseAG:Play()
+    --glowFrame:Show()
+    --pulseAG:Play()
+    ActionButtonSpellAlertManager:ShowAlert(frame)
 end
 
 local function HideGlow()
-    pulseAG:Stop()
-    glowFrame:Hide()
+    --pulseAG:Stop()
+    --glowFrame:Hide()
+    ActionButtonSpellAlertManager:HideAlert(frame)
 end
 
 local function IsFocusCasting()
