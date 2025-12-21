@@ -1,10 +1,11 @@
 --------------------------------------------------
 -- Constants & Locals
 --------------------------------------------------
-local ADDON_NAME = ...
+local ADDON_NAME = "InterruptIcon"
 local ICON_ID = 135856
 local COOLDOWN_DURATION = 20
 local INTERRUPT_SPELL_ID = 2139
+local settingsCategory
 
 --------------------------------------------------
 -- Frame Creation (no SavedVariables used here)
@@ -76,6 +77,11 @@ local function UpdateVisibility()
         frame:Hide()
         HideGlow() 
     end
+end
+
+local function UpdateSize(size)
+    InterruptIconDB.size = size
+    frame:SetSize(size, size)
 end
 
 --------------------------------------------------
@@ -180,8 +186,7 @@ SLASH_INTERRUPTICONSIZE1 = "/iisize"
 SlashCmdList.INTERRUPTICONSIZE = function(msg)
     local size = tonumber(msg)
     if size then
-        InterruptIconDB.size = size
-        frame:SetSize(size, size)
+        UpdateSize(size)
         print("Interrupt Icon size set to", size)
     end
 end
@@ -202,5 +207,117 @@ SlashCmdList.INTERRUPTICONLOCK = function()
     else
         frame:EnableMouse(true)
         print("Interrupt Icon unlocked (drag to move)")
+    end
+end
+
+SLASH_INTERRUPTICONOPTIONS1 = "/iioptions"
+SlashCmdList.INTERRUPTICONOPTIONS = function()
+    if Settings and Settings.OpenToCategory then
+        if settingsCategory and settingsCategory.GetID then
+            Settings.OpenToCategory(settingsCategory:GetID())
+        else
+            Settings.OpenToCategory(ADDON_NAME)
+        end
+    else
+        print("|cffffff00["..ADDON_NAME.."]|r Unable to open options menu. Try manually?")
+    end
+end
+
+SLASH_INTERRUPTICON1 = "/ii"
+SlashCmdList.INTERRUPTICON = function()
+    print("Interrupt Icon, usage: ")
+    print("/iioptions: Opens the options menu. ")
+    print("/iilock: Locks the icon. ")
+    print("/iisize: Resizes the icon. ")
+    print("/iitest: Triggers a 'fake' cooldown for testing purposes. ")
+end
+
+-----------------------------------------------------------------------
+-- 💀💀💀💀
+-- It's all Options Panel from down here (enter at your own risk)
+-----------------------------------------------------------------------
+do
+    local panel = CreateFrame("Frame", "InterruptIconOptionsPanel")
+    panel.name = "Interrupt Icon"
+    panel:Hide()
+
+    InterruptIconOptions = InterruptIconOptions or {}
+
+    panel:SetScript("OnShow", function(self)
+        if self.initialized then return end
+        self.initialized = true
+
+        ----------------------------------------------------------------
+        -- Title & description
+        ----------------------------------------------------------------
+        local title = self:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+        title:SetPoint("TOPLEFT", 16, -16)
+        title:SetText("Interrupt Icon")
+
+        local desc = self:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+        desc:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+        desc:SetJustifyH("LEFT")
+        desc:SetText("Made by Aryella on Silvermoon EU")
+
+        local kickCooldownLabel = self:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        kickCooldownLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 0, -20)
+        kickCooldownLabel:SetText("Kick cooldown: ")
+
+        local kickCooldownEditBox = CreateFrame("EditBox", "InterruptIconKickCooldownEditBox", self, "InputBoxTemplate")
+        kickCooldownEditBox:SetSize(35, 20)
+        kickCooldownEditBox:SetPoint("LEFT", kickCooldownLabel, "RIGHT", 10, 0)
+        kickCooldownEditBox:SetAutoFocus(false)
+        kickCooldownEditBox:SetText("20")
+
+        local kickSpellIDLabel = self:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        kickSpellIDLabel:SetPoint("TOPLEFT", kickCooldownLabel, "BOTTOMLEFT", 0, -10)
+        kickSpellIDLabel:SetText("Kick Spell ID: ")
+
+        local kickSpellIDEditBox = CreateFrame("EditBox", "InterruptIconKickSpellIDEditBox", self, "InputBoxTemplate")
+        kickSpellIDEditBox:SetSize(65, 20)
+        kickSpellIDEditBox:SetPoint("LEFT", kickSpellIDLabel, "RIGHT", 10, 0)
+        kickSpellIDEditBox:SetAutoFocus(false)
+        kickSpellIDEditBox:SetText("2139")
+
+        local kickSpellIconLabel = self:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        kickSpellIconLabel:SetPoint("TOPLEFT", kickSpellIDLabel, "BOTTOMLEFT", 0, -10)
+        kickSpellIconLabel:SetText("Kick Spell Icon ID: ")
+
+        local kickSpellIconEditBox = CreateFrame("EditBox", "InterruptIconKickSpellIconEditBox", self, "InputBoxTemplate")
+        kickSpellIconEditBox:SetSize(80, 20)
+        kickSpellIconEditBox:SetPoint("LEFT", kickSpellIconLabel, "RIGHT", 10, 0)
+        kickSpellIconEditBox:SetAutoFocus(false)
+        kickSpellIconEditBox:SetText("135856")
+
+        local kickIconSizeLabel = self:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+        kickIconSizeLabel:SetPoint("TOPLEFT", kickSpellIconLabel, "BOTTOMLEFT", 0, -10)
+        kickIconSizeLabel:SetText("Kick Icon Size: ")
+
+        local kickIconSizeEditBox = CreateFrame("EditBox", "InterruptIconKickIconSizeEditBox", self, "InputBoxTemplate")
+        kickIconSizeEditBox:SetSize(35, 20)
+        kickIconSizeEditBox:SetPoint("LEFT", kickIconSizeLabel, "RIGHT", 10, 0)
+        kickIconSizeEditBox:SetAutoFocus(false)
+        kickIconSizeEditBox:SetText("40")
+
+        local hint = self:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+        hint:SetPoint("TOPLEFT", kickIconSizeLabel, "BOTTOMLEFT", 0, -20)
+        hint:SetJustifyH("LEFT")
+        hint:SetText("All default values here are for Mages. \n" .. 
+                    "If you're not a Mage, you have to edit everything in this menu for the addon to function. \n" .. 
+                    "Also... If your class has a variable kick cooldown, then this kinda won't work for you :)")
+    end)
+
+    -------------------------------------------------------------------
+    -- Register with Settings / Interface Options
+    -------------------------------------------------------------------
+    if Settings and Settings.RegisterCanvasLayoutCategory and Settings.RegisterAddOnCategory then
+        settingsCategory = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
+        Settings.RegisterAddOnCategory(settingsCategory)
+    else
+        -- Something is wrong and can't make the options menu. AKA fuck handling multiple client versions. 
+        if not InterruptIconOptions_NoInterfaceOptionsWarning then
+            InterruptIconOptions_NoInterfaceOptionsWarning = true
+            print("InterruptIcon: Unable to register options panel: no Settings or InterfaceOptions API found.")
+        end
     end
 end
