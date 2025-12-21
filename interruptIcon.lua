@@ -28,61 +28,13 @@ local cooldown = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
 cooldown:SetAllPoints()
 
 --------------------------------------------------
--- Glow Frames & Textures
---------------------------------------------------
-local glowFrame = CreateFrame("Frame", nil, frame)
-glowFrame:SetPoint("CENTER")
-glowFrame:SetFrameStrata(frame:GetFrameStrata())
-glowFrame:SetFrameLevel(frame:GetFrameLevel() + 10)
-glowFrame:Hide()
-
-local innerGlow = glowFrame:CreateTexture(nil, "OVERLAY")
-innerGlow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
-innerGlow:SetBlendMode("ADD")
-innerGlow:SetAlpha(0.9)
-innerGlow:SetVertexColor(1, 0.85, 0.25)
-innerGlow:SetPoint("CENTER")
-
-local outerGlow = glowFrame:CreateTexture(nil, "OVERLAY")
-outerGlow:SetTexture("Interface\\Cooldown\\star4")
-outerGlow:SetBlendMode("ADD")
-outerGlow:SetAlpha(0.6)
-outerGlow:SetVertexColor(1, 0.75, 0.2)
-outerGlow:SetPoint("CENTER")
-
---------------------------------------------------
--- Animation
---------------------------------------------------
-local pulseAG = glowFrame:CreateAnimationGroup()
-local pulse = pulseAG:CreateAnimation("Alpha")
-pulse:SetFromAlpha(0.35)
-pulse:SetToAlpha(0.85)
-pulse:SetDuration(0.5)
-pulse:SetSmoothing("IN_OUT")
-pulseAG:SetLooping("BOUNCE")
-
---------------------------------------------------
 -- Helper Functions
 --------------------------------------------------
-local function UpdateGlowSize(iconSize)
-    local innerSize = iconSize * 1.9
-    local outerSize = iconSize * 2.8
-
-    glowFrame:SetSize(outerSize, outerSize)
-
-    innerGlow:SetSize(innerSize, innerSize)
-    outerGlow:SetSize(outerSize * 0.6, outerSize * 0.6)
-end
-
 local function ShowGlow()
-    --glowFrame:Show()
-    --pulseAG:Play()
     ActionButtonSpellAlertManager:ShowAlert(frame)
 end
 
 local function HideGlow()
-    --pulseAG:Stop()
-    --glowFrame:Hide()
     ActionButtonSpellAlertManager:HideAlert(frame)
 end
 
@@ -207,7 +159,6 @@ init:SetScript("OnEvent", function(_, _, name)
     InterruptIconDB.locked = InterruptIconDB.locked or false
 
     frame:SetSize(InterruptIconDB.size, InterruptIconDB.size)
-    UpdateGlowSize(InterruptIconDB.size)
 
     frame:ClearAllPoints()
     frame:SetPoint(
@@ -231,7 +182,6 @@ SlashCmdList.INTERRUPTICONSIZE = function(msg)
     if size then
         InterruptIconDB.size = size
         frame:SetSize(size, size)
-        UpdateGlowSize(size)
         print("Interrupt Icon size set to", size)
     end
 end
