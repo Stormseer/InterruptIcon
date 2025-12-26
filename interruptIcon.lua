@@ -30,6 +30,18 @@ cooldown:SetAllPoints()
 --------------------------------------------------
 -- Helper Functions
 --------------------------------------------------
+hooksecurefunc(ActionButtonSpellAlertManager, "ShowAlert", function(self, button)
+    -- Make proc glow better
+    local alertFrame = button.SpellActivationAlert
+    if alertFrame then
+        alertFrame.ProcStartFlipbook:ClearAllPoints()
+        local width, height = button:GetSize()
+        alertFrame.ProcStartFlipbook:SetPoint("TOPLEFT", button, -width * 0.95, height * 0.95)
+        alertFrame.ProcStartFlipbook:SetPoint("BOTTOMRIGHT", button, height * 0.95, -width * 0.95)
+        alertFrame.ProcLoop:Play()
+    end
+end)
+
 local function ShowGlow()
     ActionButtonSpellAlertManager:ShowAlert(frame)
 end
