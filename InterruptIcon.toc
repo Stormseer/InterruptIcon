@@ -3,6 +3,7 @@
 ## Author: Aryella
 ## Version: 0.1
 ## Notes: Simple interrupt cooldown icon
+## Category: Ary's Personals
 ## SavedVariables: InterruptIconDB
 
 InterruptIcon.lua
