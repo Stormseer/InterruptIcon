@@ -4,6 +4,7 @@
 ## Version: 0.1
 ## Notes: Simple interrupt cooldown icon
 ## Category: Ary's Personals
+## IconTexture: Interface/AddOns/InterruptIcon/arys-intellect
 ## SavedVariables: InterruptIconDB
 
 InterruptIcon.lua
