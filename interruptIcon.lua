@@ -19,6 +19,7 @@ container:SetClampedToScreen(true)
 --------------------------------------------------
 local normalFrame = CreateFrame("Frame", "InterruptIconNormalFrame", container)
 normalFrame:SetAllPoints()
+normalFrame:EnableMouse(disable)
 
 local normalIcon = normalFrame:CreateTexture(nil, "ARTWORK")
 normalIcon:SetAllPoints()
@@ -32,6 +33,7 @@ normalCooldown:SetAllPoints()
 --------------------------------------------------
 local glowFrame = CreateFrame("Button", "InterruptIconGlowFrame", container, "ActionButtonTemplate")
 glowFrame:SetAllPoints()
+glowFrame:EnableMouse(disable)
 
 local glowIcon = glowFrame:CreateTexture(nil, "ARTWORK")
 glowIcon:SetAllPoints()
