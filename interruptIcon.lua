@@ -5,6 +5,7 @@ local ADDON_NAME = "InterruptIcon"
 local ICON_ID = 135856
 local COOLDOWN_DURATION = 20
 local INTERRUPT_SPELL_ID = 2139
+local LCG = LibStub("LibCustomGlow-1.0")
 
 --------------------------------------------------
 -- Container Frame (for moving both together)
@@ -31,7 +32,7 @@ normalCooldown:SetAllPoints()
 --------------------------------------------------
 -- Glow Frame (shown only when glowing)
 --------------------------------------------------
-local glowFrame = CreateFrame("Button", "InterruptIconGlowFrame", container, "ActionButtonTemplate")
+local glowFrame = CreateFrame("Frame", "InterruptIconGlowFrame", container)
 glowFrame:SetAllPoints()
 glowFrame:EnableMouse(disable)
 
@@ -45,26 +46,14 @@ glowCooldown:SetAllPoints()
 --------------------------------------------------
 -- Helper Functions
 --------------------------------------------------
-hooksecurefunc(ActionButtonSpellAlertManager, "ShowAlert", function(self, button)
-    -- Make proc glow better
-    local alertFrame = button.SpellActivationAlert
-    if alertFrame then
-        alertFrame.ProcStartFlipbook:ClearAllPoints()
-        local width, height = button:GetSize()
-        alertFrame.ProcStartFlipbook:SetPoint("TOPLEFT", button, -width * 0.95, height * 0.95)
-        alertFrame.ProcStartFlipbook:SetPoint("BOTTOMRIGHT", button, height * 0.95, -width * 0.95)
-        alertFrame.ProcLoop:Play()
-    end
-end)
-
 local function ShowGlow()
-    ActionButtonSpellAlertManager:ShowAlert(glowFrame)
+    LCG.ButtonGlow_Start(glowFrame)
     glowFrame:SetAlpha(1)
     normalFrame:SetAlpha(0)
 end
 
 local function HideGlow()
-    ActionButtonSpellAlertManager:HideAlert(glowFrame)
+    LCG.ButtonGlow_Start(glowFrame)
     glowFrame:SetAlpha(0)
     normalFrame:SetAlpha(1)
 end
@@ -92,7 +81,7 @@ local function StartInterruptCooldown()
     local now = GetTime()
     normalCooldown:SetCooldown(now, COOLDOWN_DURATION)
     glowCooldown:SetCooldown(now, COOLDOWN_DURATION)
-    
+
     normalIcon:SetDesaturated(true)
     glowIcon:SetDesaturated(true)
 
@@ -171,11 +160,10 @@ container:SetScript("OnEvent", function(_, event, unit, _, spellId)
             local name, text, texture, startTime, endTime, isTradeSkill, castID, notInterruptible = UnitCastingInfo("focus")
             if name then
                 -- Show glow frame only if interruptible (notInterruptible is false)
-                -- SetAlphaFromBoolean handles secret values
-                ActionButtonSpellAlertManager:ShowAlert(glowFrame)
+                LCG.ButtonGlow_Start(glowFrame)
                 glowFrame:SetAlphaFromBoolean(notInterruptible, 0, 1)
                 normalFrame:SetAlphaFromBoolean(notInterruptible, 1, 0)
-                ActionButtonSpellAlertManager:ShowAlert(glowFrame)
+                LCG.ButtonGlow_Start(glowFrame)
             end
         end
         return
@@ -186,10 +174,10 @@ container:SetScript("OnEvent", function(_, event, unit, _, spellId)
             local name, text, texture, startTime, endTime, isTradeSkill, notInterruptible = UnitChannelInfo("focus")
             if name then
                 -- Show glow frame only if interruptible (notInterruptible is false)
-                ActionButtonSpellAlertManager:ShowAlert(glowFrame)
+                LCG.ButtonGlow_Start(glowFrame)
                 glowFrame:SetAlphaFromBoolean(notInterruptible, 0, 1)
                 normalFrame:SetAlphaFromBoolean(notInterruptible, 1, 0)
-                ActionButtonSpellAlertManager:ShowAlert(glowFrame)
+                LCG.ButtonGlow_Start(glowFrame)
             end
         end
         return

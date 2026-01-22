@@ -16,6 +16,9 @@
     ],
     "Lua.diagnostics.globals": [
         "SlashCmdList",
-        "ActionButtonSpellAlertManager"
+        "ActionButtonSpellAlertManager",
+        "CreateTexturePool",
+        "CreateFramePool",
+        "AnimateTexCoords"
     ]
 }
