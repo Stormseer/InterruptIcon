@@ -7,25 +7,38 @@ local COOLDOWN_DURATION = 20
 local INTERRUPT_SPELL_ID = 2139
 
 --------------------------------------------------
--- Frame Creation (no SavedVariables used here)
+-- Container Frame (for moving both together)
 --------------------------------------------------
-local frame = CreateFrame("Frame", "InterruptIconFrame", UIParent)
-frame:SetMovable(true)
-frame:RegisterForDrag("LeftButton")
-frame:SetClampedToScreen(true)
+local container = CreateFrame("Frame", "InterruptIconContainer", UIParent)
+container:SetMovable(true)
+container:RegisterForDrag("LeftButton")
+container:SetClampedToScreen(true)
 
 --------------------------------------------------
--- Icon Texture
+-- Normal Frame (shown most of the time, no glow)
 --------------------------------------------------
-local icon = frame:CreateTexture(nil, "ARTWORK")
-icon:SetAllPoints()
-icon:SetTexture(ICON_ID)
+local normalFrame = CreateFrame("Frame", "InterruptIconNormalFrame", container)
+normalFrame:SetAllPoints()
+
+local normalIcon = normalFrame:CreateTexture(nil, "ARTWORK")
+normalIcon:SetAllPoints()
+normalIcon:SetTexture(ICON_ID)
+
+local normalCooldown = CreateFrame("Cooldown", nil, normalFrame, "CooldownFrameTemplate")
+normalCooldown:SetAllPoints()
 
 --------------------------------------------------
--- Cooldown Swipe
+-- Glow Frame (shown only when glowing)
 --------------------------------------------------
-local cooldown = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
-cooldown:SetAllPoints()
+local glowFrame = CreateFrame("Button", "InterruptIconGlowFrame", container, "ActionButtonTemplate")
+glowFrame:SetAllPoints()
+
+local glowIcon = glowFrame:CreateTexture(nil, "ARTWORK")
+glowIcon:SetAllPoints()
+glowIcon:SetTexture(ICON_ID)
+
+local glowCooldown = CreateFrame("Cooldown", nil, glowFrame, "CooldownFrameTemplate")
+glowCooldown:SetAllPoints()
 
 --------------------------------------------------
 -- Helper Functions
@@ -43,11 +56,15 @@ hooksecurefunc(ActionButtonSpellAlertManager, "ShowAlert", function(self, button
 end)
 
 local function ShowGlow()
-    ActionButtonSpellAlertManager:ShowAlert(frame)
+    ActionButtonSpellAlertManager:ShowAlert(glowFrame)
+    glowFrame:SetAlpha(1)
+    normalFrame:SetAlpha(0)
 end
 
 local function HideGlow()
-    ActionButtonSpellAlertManager:HideAlert(frame)
+    ActionButtonSpellAlertManager:HideAlert(glowFrame)
+    glowFrame:SetAlpha(0)
+    normalFrame:SetAlpha(1)
 end
 
 local function IsFocusCasting()
@@ -69,11 +86,17 @@ end
 local function StartInterruptCooldown()
     HideGlow()
 
-    cooldown:SetCooldown(GetTime(), COOLDOWN_DURATION)
-    icon:SetDesaturated(true)
+    -- Set cooldown on both frames to keep them in sync
+    local now = GetTime()
+    normalCooldown:SetCooldown(now, COOLDOWN_DURATION)
+    glowCooldown:SetCooldown(now, COOLDOWN_DURATION)
+    
+    normalIcon:SetDesaturated(true)
+    glowIcon:SetDesaturated(true)
 
     C_Timer.After(COOLDOWN_DURATION, function()
-        icon:SetDesaturated(false)
+        normalIcon:SetDesaturated(false)
+        glowIcon:SetDesaturated(false)
 
         if IsFocusCasting() then
             ShowGlow()
@@ -83,28 +106,28 @@ end
 
 local function UpdateVisibility()
     if UnitExists("focus") then
-        frame:Show()
+        container:Show()
     else
-        frame:Hide()
-        HideGlow() 
+        container:Hide()
+        HideGlow()
     end
 end
 
 local function UpdateSize(size)
     InterruptIconDB.size = size
-    frame:SetSize(size, size)
+    container:SetSize(size, size)
 end
 
 --------------------------------------------------
 -- Drag Handling
 --------------------------------------------------
-frame:SetScript("OnDragStart", function(self)
+container:SetScript("OnDragStart", function(self)
     if not InterruptIconDB.locked then
         self:StartMoving()
     end
 end)
 
-frame:SetScript("OnDragStop", function(self)
+container:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()
 
     if not InterruptIconDB.locked then
@@ -118,13 +141,13 @@ end)
 --------------------------------------------------
 -- Events
 --------------------------------------------------
-frame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-frame:RegisterEvent("UNIT_SPELLCAST_START")
-frame:RegisterEvent("UNIT_SPELLCAST_STOP")
-frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-frame:RegisterEvent("PLAYER_FOCUS_CHANGED")
-frame:SetScript("OnEvent", function(_, event, unit, _, spellId)
+container:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+container:RegisterEvent("UNIT_SPELLCAST_START")
+container:RegisterEvent("UNIT_SPELLCAST_STOP")
+container:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
+container:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+container:RegisterEvent("PLAYER_FOCUS_CHANGED")
+container:SetScript("OnEvent", function(_, event, unit, _, spellId)
 
     -- Check if there is a focus target. 
     if event == "PLAYER_FOCUS_CHANGED" then
@@ -141,10 +164,30 @@ frame:SetScript("OnEvent", function(_, event, unit, _, spellId)
     end
 
     -- Focus cast start (cast or channel)
-    if (event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_CHANNEL_START") then
-        if unit == "focus" then
-            if cooldown:GetCooldownDuration() == 0 then
-                ShowGlow()
+    if event == "UNIT_SPELLCAST_START" then
+        if unit == "focus" and normalCooldown:GetCooldownDuration() == 0 then
+            local name, text, texture, startTime, endTime, isTradeSkill, castID, notInterruptible = UnitCastingInfo("focus")
+            if name then
+                -- Show glow frame only if interruptible (notInterruptible is false)
+                -- SetAlphaFromBoolean handles secret values
+                ActionButtonSpellAlertManager:ShowAlert(glowFrame)
+                glowFrame:SetAlphaFromBoolean(notInterruptible, 0, 1)
+                normalFrame:SetAlphaFromBoolean(notInterruptible, 1, 0)
+                ActionButtonSpellAlertManager:ShowAlert(glowFrame)
+            end
+        end
+        return
+    end
+    
+    if event == "UNIT_SPELLCAST_CHANNEL_START" then
+        if unit == "focus" and normalCooldown:GetCooldownDuration() == 0 then
+            local name, text, texture, startTime, endTime, isTradeSkill, notInterruptible = UnitChannelInfo("focus")
+            if name then
+                -- Show glow frame only if interruptible (notInterruptible is false)
+                ActionButtonSpellAlertManager:ShowAlert(glowFrame)
+                glowFrame:SetAlphaFromBoolean(notInterruptible, 0, 1)
+                normalFrame:SetAlphaFromBoolean(notInterruptible, 1, 0)
+                ActionButtonSpellAlertManager:ShowAlert(glowFrame)
             end
         end
         return
@@ -175,10 +218,10 @@ init:SetScript("OnEvent", function(_, _, name)
     InterruptIconDB.y      = InterruptIconDB.y      or 0
     InterruptIconDB.locked = InterruptIconDB.locked or false
 
-    frame:SetSize(InterruptIconDB.size, InterruptIconDB.size)
+    container:SetSize(InterruptIconDB.size, InterruptIconDB.size)
 
-    frame:ClearAllPoints()
-    frame:SetPoint(
+    container:ClearAllPoints()
+    container:SetPoint(
         InterruptIconDB.point,
         UIParent,
         InterruptIconDB.point,
@@ -186,7 +229,7 @@ init:SetScript("OnEvent", function(_, _, name)
         InterruptIconDB.y
     )
 
-    frame:EnableMouse(not InterruptIconDB.locked)
+    container:EnableMouse(not InterruptIconDB.locked)
     UpdateVisibility()
 end)
 
@@ -213,10 +256,10 @@ SlashCmdList.INTERRUPTICONLOCK = function()
     InterruptIconDB.locked = not InterruptIconDB.locked
 
     if InterruptIconDB.locked then
-        frame:EnableMouse(false)
+        container:EnableMouse(false)
         print("Interrupt Icon locked")
     else
-        frame:EnableMouse(true)
+        container:EnableMouse(true)
         print("Interrupt Icon unlocked (drag to move)")
     end
 end
