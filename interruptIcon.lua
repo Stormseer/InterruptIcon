@@ -8,66 +8,51 @@ local INTERRUPT_SPELL_ID = 2139
 local LCG = LibStub("LibCustomGlow-1.0")
 
 --------------------------------------------------
--- Container Frame (for moving both together)
+-- Frame Creation
 --------------------------------------------------
-local container = CreateFrame("Frame", "InterruptIconContainer", UIParent)
-container:SetMovable(true)
-container:RegisterForDrag("LeftButton")
-container:SetClampedToScreen(true)
-
---------------------------------------------------
--- Normal Frame (shown most of the time, no glow)
---------------------------------------------------
-local normalFrame = CreateFrame("Frame", "InterruptIconNormalFrame", container)
-normalFrame:SetAllPoints()
-normalFrame:EnableMouse(disable)
-
-local normalIcon = normalFrame:CreateTexture(nil, "ARTWORK")
-normalIcon:SetAllPoints()
-normalIcon:SetTexture(ICON_ID)
-
-local normalCooldown = CreateFrame("Cooldown", nil, normalFrame, "CooldownFrameTemplate")
-normalCooldown:SetAllPoints()
+local frame = CreateFrame("Frame", "InterruptIconFrame", UIParent)
+frame:SetMovable(true)
+frame:RegisterForDrag("LeftButton")
+frame:SetClampedToScreen(true)
 
 --------------------------------------------------
--- Glow Frame (shown only when glowing)
+-- Icon Texture
 --------------------------------------------------
-local glowFrame = CreateFrame("Frame", "InterruptIconGlowFrame", container)
-glowFrame:SetAllPoints()
-glowFrame:EnableMouse(disable)
+local icon = frame:CreateTexture(nil, "ARTWORK")
+icon:SetAllPoints()
+icon:SetTexture(ICON_ID)
 
-local glowIcon = glowFrame:CreateTexture(nil, "ARTWORK")
-glowIcon:SetAllPoints()
-glowIcon:SetTexture(ICON_ID)
-
-local glowCooldown = CreateFrame("Cooldown", nil, glowFrame, "CooldownFrameTemplate")
-glowCooldown:SetAllPoints()
+--------------------------------------------------
+-- Cooldown Swipe
+--------------------------------------------------
+local cooldown = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+cooldown:SetAllPoints()
 
 --------------------------------------------------
 -- Helper Functions
 --------------------------------------------------
 local function ShowGlow()
-    LCG.ButtonGlow_Start(glowFrame)
-    glowFrame:SetAlpha(1)
-    normalFrame:SetAlpha(0)
+    LCG.ProcGlow_Start(frame)
 end
 
 local function HideGlow()
-    LCG.ButtonGlow_Start(glowFrame)
-    glowFrame:SetAlpha(0)
-    normalFrame:SetAlpha(1)
+    LCG.ProcGlow_Stop(frame)
 end
 
 local function IsFocusCasting()
     if not UnitExists("focus") then return false end
 
-    local name = UnitCastingInfo("focus")
+    local name, text, texture, startTime, endTime, isTradeSkill, castID, notInterruptible = UnitCastingInfo("focus")
     if name then
+        ShowGlow()
+        frame._ProcGlow:SetAlphaFromBoolean(notInterruptible, 0, 1)
         return true
     end
 
     local channel = UnitChannelInfo("focus")
     if channel then
+        ShowGlow()
+        frame._ProcGlow:SetAlphaFromBoolean(notInterruptible, 0, 1)
         return true
     end
 
@@ -75,50 +60,45 @@ local function IsFocusCasting()
 end
 
 local function StartInterruptCooldown()
-    HideGlow()
+    frame._ProcGlow:SetAlphaFromBoolean(false, 1, 0)
 
-    -- Set cooldown on both frames to keep them in sync
-    local now = GetTime()
-    normalCooldown:SetCooldown(now, COOLDOWN_DURATION)
-    glowCooldown:SetCooldown(now, COOLDOWN_DURATION)
-
-    normalIcon:SetDesaturated(true)
-    glowIcon:SetDesaturated(true)
+    cooldown:SetCooldown(GetTime(), COOLDOWN_DURATION)
+    icon:SetDesaturated(true)
 
     C_Timer.After(COOLDOWN_DURATION, function()
-        normalIcon:SetDesaturated(false)
-        glowIcon:SetDesaturated(false)
+        icon:SetDesaturated(false)
 
-        if IsFocusCasting() then
-            ShowGlow()
-        end
+        IsFocusCasting()
     end)
 end
 
 local function UpdateVisibility()
     if UnitExists("focus") then
-        container:Show()
+        frame:Show()
+        ShowGlow()
+        frame._ProcGlow:SetAlphaFromBoolean(false, 1, 0)
     else
-        container:Hide()
-        HideGlow()
+        frame:Hide()
+        ShowGlow()
+        frame._ProcGlow:SetAlphaFromBoolean(false, 1, 0)
     end
 end
 
 local function UpdateSize(size)
     InterruptIconDB.size = size
-    container:SetSize(size, size)
+    frame:SetSize(size, size)
 end
 
 --------------------------------------------------
 -- Drag Handling
 --------------------------------------------------
-container:SetScript("OnDragStart", function(self)
+frame:SetScript("OnDragStart", function(self)
     if not InterruptIconDB.locked then
         self:StartMoving()
     end
 end)
 
-container:SetScript("OnDragStop", function(self)
+frame:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()
 
     if not InterruptIconDB.locked then
@@ -132,13 +112,13 @@ end)
 --------------------------------------------------
 -- Events
 --------------------------------------------------
-container:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-container:RegisterEvent("UNIT_SPELLCAST_START")
-container:RegisterEvent("UNIT_SPELLCAST_STOP")
-container:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
-container:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
-container:RegisterEvent("PLAYER_FOCUS_CHANGED")
-container:SetScript("OnEvent", function(_, event, unit, _, spellId)
+frame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+frame:RegisterEvent("UNIT_SPELLCAST_START")
+frame:RegisterEvent("UNIT_SPELLCAST_STOP")
+frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
+frame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
+frame:RegisterEvent("PLAYER_FOCUS_CHANGED")
+frame:SetScript("OnEvent", function(_, event, unit, _, spellId)
 
     -- Check if there is a focus target. 
     if event == "PLAYER_FOCUS_CHANGED" then
@@ -154,32 +134,25 @@ container:SetScript("OnEvent", function(_, event, unit, _, spellId)
         return
     end
 
-    -- Focus cast start (cast or channel)
-    if event == "UNIT_SPELLCAST_START" then
-        if unit == "focus" and normalCooldown:GetCooldownDuration() == 0 then
+    -- Focus cast start (cast)
+    if (event == "UNIT_SPELLCAST_START") then
+        if unit == "focus" and cooldown:GetCooldownDuration() == 0 then
             local name, text, texture, startTime, endTime, isTradeSkill, castID, notInterruptible = UnitCastingInfo("focus")
-            if name then
-                -- Show glow frame only if interruptible (notInterruptible is false)
-                LCG.ButtonGlow_Start(glowFrame)
-                glowFrame:SetAlphaFromBoolean(notInterruptible, 0, 1)
-                normalFrame:SetAlphaFromBoolean(notInterruptible, 1, 0)
-                LCG.ButtonGlow_Start(glowFrame)
-            end
+            ShowGlow()
+            frame._ProcGlow:SetAlphaFromBoolean(notInterruptible, 0, 1)
         end
+
         return
     end
-    
-    if event == "UNIT_SPELLCAST_CHANNEL_START" then
-        if unit == "focus" and normalCooldown:GetCooldownDuration() == 0 then
-            local name, text, texture, startTime, endTime, isTradeSkill, notInterruptible = UnitChannelInfo("focus")
-            if name then
-                -- Show glow frame only if interruptible (notInterruptible is false)
-                LCG.ButtonGlow_Start(glowFrame)
-                glowFrame:SetAlphaFromBoolean(notInterruptible, 0, 1)
-                normalFrame:SetAlphaFromBoolean(notInterruptible, 1, 0)
-                LCG.ButtonGlow_Start(glowFrame)
-            end
+
+      -- Focus cast start (channel)
+    if (event == "UNIT_SPELLCAST_CHANNEL_START") then
+        if unit == "focus" and cooldown:GetCooldownDuration() == 0 then
+            local name, text, texture, startTime, endTime, isTradeSkill, castID, notInterruptible = UnitChannelInfo("focus")
+            ShowGlow()
+            frame._ProcGlow:SetAlphaFromBoolean(notInterruptible, 0, 1)
         end
+
         return
     end
 
@@ -208,10 +181,10 @@ init:SetScript("OnEvent", function(_, _, name)
     InterruptIconDB.y      = InterruptIconDB.y      or 0
     InterruptIconDB.locked = InterruptIconDB.locked or false
 
-    container:SetSize(InterruptIconDB.size, InterruptIconDB.size)
+    frame:SetSize(InterruptIconDB.size, InterruptIconDB.size)
 
-    container:ClearAllPoints()
-    container:SetPoint(
+    frame:ClearAllPoints()
+    frame:SetPoint(
         InterruptIconDB.point,
         UIParent,
         InterruptIconDB.point,
@@ -219,7 +192,7 @@ init:SetScript("OnEvent", function(_, _, name)
         InterruptIconDB.y
     )
 
-    container:EnableMouse(not InterruptIconDB.locked)
+    frame:EnableMouse(not InterruptIconDB.locked)
     UpdateVisibility()
 end)
 
@@ -246,10 +219,10 @@ SlashCmdList.INTERRUPTICONLOCK = function()
     InterruptIconDB.locked = not InterruptIconDB.locked
 
     if InterruptIconDB.locked then
-        container:EnableMouse(false)
+        frame:EnableMouse(false)
         print("Interrupt Icon locked")
     else
-        container:EnableMouse(true)
+        frame:EnableMouse(true)
         print("Interrupt Icon unlocked (drag to move)")
     end
 end

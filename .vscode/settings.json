@@ -19,6 +19,37 @@
         "ActionButtonSpellAlertManager",
         "CreateTexturePool",
         "CreateFramePool",
-        "AnimateTexCoords"
+        "AnimateTexCoords",
+        "SettingsTooltip",
+        "DefaultTooltipMixin",
+        "SOUNDKIT",
+        "CreateUnsecuredObjectPool",
+        "Settings",
+        "EditModeManagerFrame",
+        "EditModeSystemSettingsDialog",
+        "GenerateClosure",
+        "EventUtil",
+        "ColorPickerFrame",
+        "RESET_TO_DEFAULT",
+        "ENABLE",
+        "StaticPopupDialogs",
+        "StaticPopup_Hide",
+        "StaticPopup_Show",
+        "MinimalSliderWithSteppersMixin",
+        "CreateMinimalSliderFormatter",
+        "HUD_EDIT_MODE_RESET_POSITION",
+        "PixelUtil",
+        "IconDataProviderMixin",
+        "IconDataProviderExtraType",
+        "PartyFrame",
+        "PlayerUtil",
+        "CompactPartyFrame",
+        "CLOSE",
+        "DifficultyUtil",
+        "AddonCompartmentFrame",
+        "CreateSettingsListSectionHeaderInitializer"
+    ],
+    "Lua.diagnostics.disable": [
+        "assign-type-mismatch"
     ]
 }
