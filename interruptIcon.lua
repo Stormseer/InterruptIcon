@@ -42,17 +42,17 @@ end
 local function IsFocusCasting()
     if not UnitExists("focus") then return false end
 
-    local name, text, texture, startTime, endTime, isTradeSkill, castID, notInterruptible = UnitCastingInfo("focus")
+    local name, _, _, _, _, _, _, notInterruptible = UnitCastingInfo("focus")
     if name then
         ShowGlow()
         frame._ProcGlow:SetAlphaFromBoolean(notInterruptible, 0, 1)
         return true
     end
 
-    local channel = UnitChannelInfo("focus")
-    if channel then
+    local channelName, _, _, _, _, _, _, channelNotInterruptible = UnitChannelInfo("focus")
+    if channelName then
         ShowGlow()
-        frame._ProcGlow:SetAlphaFromBoolean(notInterruptible, 0, 1)
+        frame._ProcGlow:SetAlphaFromBoolean(channelNotInterruptible, 0, 1)
         return true
     end
 
