@@ -60,12 +60,14 @@ local function IsFocusCasting()
 end
 
 local function StartInterruptCooldown()
+    ShowGlow()
     frame._ProcGlow:SetAlphaFromBoolean(false, 1, 0)
 
-    cooldown:SetCooldown(GetTime(), COOLDOWN_DURATION)
+    local duration = InterruptIconDB.cooldown
+    cooldown:SetCooldown(GetTime(), duration)
     icon:SetDesaturated(true)
 
-    C_Timer.After(COOLDOWN_DURATION, function()
+    C_Timer.After(duration, function()
         icon:SetDesaturated(false)
 
         IsFocusCasting()
@@ -128,7 +130,7 @@ frame:SetScript("OnEvent", function(_, event, unit, _, spellId)
 
     -- Interrupt cooldown logic
     if event == "UNIT_SPELLCAST_SUCCEEDED" then
-        if unit == "player" and spellId == INTERRUPT_SPELL_ID then
+        if unit == "player" and spellId == InterruptIconDB.spellId then
             StartInterruptCooldown()
         end
         return
@@ -175,11 +177,14 @@ init:SetScript("OnEvent", function(_, _, name)
     if name ~= ADDON_NAME then return end
 
     InterruptIconDB = InterruptIconDB or {}
-    InterruptIconDB.size   = InterruptIconDB.size   or 40
-    InterruptIconDB.point  = InterruptIconDB.point  or "CENTER"
-    InterruptIconDB.x      = InterruptIconDB.x      or 0
-    InterruptIconDB.y      = InterruptIconDB.y      or 0
-    InterruptIconDB.locked = InterruptIconDB.locked or false
+    InterruptIconDB.size   = InterruptIconDB.size       or 40
+    InterruptIconDB.point  = InterruptIconDB.point      or "CENTER"
+    InterruptIconDB.x      = InterruptIconDB.x          or 0
+    InterruptIconDB.y      = InterruptIconDB.y          or 0
+    InterruptIconDB.locked = InterruptIconDB.locked     or false
+    InterruptIconDB.iconId   = InterruptIconDB.iconId   or ICON_ID
+    InterruptIconDB.cooldown = InterruptIconDB.cooldown or COOLDOWN_DURATION
+    InterruptIconDB.spellId  = InterruptIconDB.spellId  or INTERRUPT_SPELL_ID
 
     frame:SetSize(InterruptIconDB.size, InterruptIconDB.size)
 
@@ -227,10 +232,58 @@ SlashCmdList.INTERRUPTICONLOCK = function()
     end
 end
 
+SLASH_INTERRUPTICONICON1 = "/iiicon"
+SlashCmdList.INTERRUPTICONICON = function(msg)
+    local id = tonumber(msg)
+    if id then
+        InterruptIconDB.iconId = id
+        icon:SetTexture(id)
+        print("Interrupt Icon texture set to", id)
+    else
+        print("Usage: /iiicon <fileID>")
+    end
+end
+
+SLASH_INTERRUPTICONCOOLDOWN1 = "/iicooldown"
+SlashCmdList.INTERRUPTICONCOOLDOWN = function(msg)
+    local cd = tonumber(msg)
+    if cd and cd > 0 then
+        InterruptIconDB.cooldown = cd
+        print("Interrupt cooldown set to", cd, "seconds")
+    else
+        print("Usage: /iicooldown <seconds>")
+    end
+end
+
+SLASH_INTERRUPTICONSPELLID1 = "/iispellid"
+SlashCmdList.INTERRUPTICONSPELLID = function(msg)
+    local id = tonumber(msg)
+    if id then
+        InterruptIconDB.spellId = id
+        print("Interrupt spell ID set to", id)
+    else
+        print("Usage: /iispellid <spellID>")
+    end
+end
+
+SLASH_INTERRUPTICONRESET1 = "/iireset"
+SlashCmdList.INTERRUPTICONRESET = function()
+    InterruptIconDB.iconId   = DEFAULTS.iconId
+    InterruptIconDB.cooldown = DEFAULTS.cooldown
+    InterruptIconDB.spellId  = DEFAULTS.spellId
+
+    icon:SetTexture(InterruptIconDB.iconId)
+    print("Interrupt Icon settings reset to defaults")
+end
+
 SLASH_INTERRUPTICON1 = "/ii"
 SlashCmdList.INTERRUPTICON = function()
     print("Interrupt Icon, usage: ")
     print("/iilock: Locks the icon. ")
     print("/iisize: Resizes the icon. ")
     print("/iitest: Triggers a 'fake' cooldown for testing purposes. ")
+    print("/iiicon: Changes the icon to the provided iconID. ")
+    print("/iicooldown: Changes the hardcoded cooldown to the provided cooldown (in seconds). ")
+    print("/iispellid: Changes the spellID of your kick spell. ")
+    print("/iireset: Resets icon, cooldown & spellID to defaults (Mage). Requires reload. ")
 end

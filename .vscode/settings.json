@@ -47,7 +47,8 @@
         "CLOSE",
         "DifficultyUtil",
         "AddonCompartmentFrame",
-        "CreateSettingsListSectionHeaderInitializer"
+        "CreateSettingsListSectionHeaderInitializer",
+        "DEFAULTS"
     ],
     "Lua.diagnostics.disable": [
         "assign-type-mismatch"

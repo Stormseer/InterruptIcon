@@ -5,7 +5,7 @@
 ## Notes: Simple interrupt cooldown icon
 ## Category: Ary's Personals
 ## IconTexture: Interface/AddOns/InterruptIcon/arys-intellect
-## SavedVariables: InterruptIconDB
+## SavedVariablesPerCharacter: InterruptIconDB
 
 LibCustomGlow-1.0/LibStub/LibStub.lua
 LibCustomGlow-1.0/LibCustomGlow-1.0.lua
