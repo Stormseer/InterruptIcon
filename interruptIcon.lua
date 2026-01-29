@@ -77,12 +77,18 @@ end
 local function UpdateVisibility()
     if UnitExists("focus") then
         frame:Show()
-        ShowGlow()
-        frame._ProcGlow:SetAlphaFromBoolean(false, 1, 0)
+
+        local name, _, _, _, _, _, _, notInterruptible = UnitCastingInfo("focus")
+        if name then
+            ShowGlow()
+            frame._ProcGlow:SetAlphaFromBoolean(notInterruptible, 0, 1)
+        else
+            HideGlow()
+        end
     else
         frame:Hide()
         ShowGlow()
-        frame._ProcGlow:SetAlphaFromBoolean(false, 1, 0)
+        frame._ProcGlow:SetAlpha(0)
     end
 end
 
