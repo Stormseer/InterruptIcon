@@ -1,7 +1,7 @@
 ## Interface: 120000
 ## Title: Interrupt Icon
 ## Author: Aryella
-## Version: 0.1
+## Version: 0.2
 ## Notes: Simple interrupt cooldown icon
 ## Category: Ary's Personals
 ## IconTexture: Interface/AddOns/InterruptIcon/arys-intellect
