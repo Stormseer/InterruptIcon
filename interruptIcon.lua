@@ -79,7 +79,7 @@ local function UpdateVisibility()
         frame:Show()
 
         local name, _, _, _, _, _, _, notInterruptible = UnitCastingInfo("focus")
-        if name then
+        if name and cooldown:GetCooldownDuration() == 0 then
             ShowGlow()
             frame._ProcGlow:SetAlphaFromBoolean(notInterruptible, 0, 1)
         else
@@ -89,6 +89,7 @@ local function UpdateVisibility()
         frame:Hide()
         ShowGlow()
         frame._ProcGlow:SetAlpha(0)
+        HideGlow()
     end
 end
 
@@ -167,6 +168,7 @@ frame:SetScript("OnEvent", function(_, event, unit, _, spellId)
     -- Focus cast end (cast or channel)
     if (event == "UNIT_SPELLCAST_STOP" or event == "UNIT_SPELLCAST_CHANNEL_STOP") then
         if unit == "focus" then
+            frame._ProcGlow:SetAlpha(0)
             HideGlow()
         end
         return
